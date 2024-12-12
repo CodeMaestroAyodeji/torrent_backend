@@ -1,0 +1,32 @@
+# .gitignore file for Node.js projects
+
+# Node Modules
+node_modules/
+
+# Environment Variables
+.env
+.env.production
+.env.development
+
+# Logs
+logs/
+*.log
+
+# Cache
+.cache/
+
+# Build Files
+dist/
+
+# Coverage Directory
+coverage/
+
+# IDE-specific Files
+.vscode/
+.idea/
+storage
+
+# System Files
+.DS_Store
+Thumbs.db
+
