@@ -1,12 +1,30 @@
-const mongoose = require('mongoose');
+// models/Torrent.js  
+const mongoose = require('mongoose');  
 
-const TorrentSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  magnetLink: { type: String, required: true },
-  status: { type: String, enum: ['queued', 'downloading', 'completed', 'error'], default: 'queued' },
-  progress: { type: Number, default: 0 },
-  files: [{ name: String, path: String, size: Number }],
-  error: { type: String, default: null },
-}, { timestamps: true });
+const torrentSchema = new mongoose.Schema({  
+  user: {  
+    type: mongoose.Schema.Types.ObjectId,  
+    ref: 'User', // Reference to the User model  
+    required: true,  
+  },  
+  magnetLink: {  
+    type: String,  
+    required: true,  
+  },  
+  progress: {  
+    type: Number,  
+    default: 0,  
+  },  
+  status: {  
+    type: String,  
+    enum: ['queued', 'downloading', 'completed'],  
+    default: 'queued',  
+  },  
+  fileName: {  
+    type: String,  
+    required: true, // Assuming we want to store the name of the downloaded file  
+  },  
+}, { timestamps: true });  
 
-module.exports = mongoose.model('Torrent', TorrentSchema);
+const Torrent = mongoose.model('Torrent', torrentSchema);  
+module.exports = Torrent;
