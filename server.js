@@ -10,8 +10,11 @@ const errorHandler = require('./middleware/errorHandler');
 
 const authRoutes = require('./routes/auth'); 
 const torrentRoutes = require('./routes/torrent');
-const subscriptionRoutes = require('./routes/subscription');
 const adminRoutes = require('./routes/admin');
+const subscriptionRoutes = require('./routes/subscription');
+const paypalRoutes = require('./routes/paypal');
+const paystackRoutes = require('./routes/paystack');
+const flutterwaveRoutes = require('./routes/flutterwave');
 
 
 
@@ -43,8 +46,12 @@ connectDB()
     // Routes  
     app.use('/api/auth', authRoutes);  
     app.use('/api/torrents', torrentRoutes);
-    app.use('/api/subscriptions', subscriptionRoutes);
     app.use('/api/admin', adminRoutes);
+    app.use('/api/subscriptions', subscriptionRoutes);
+    app.use('/api/paypal', paypalRoutes);
+    app.use('/api/paystack', paystackRoutes);
+    app.use('/api/flutterwave', flutterwaveRoutes);
+    
 
     // Error handling middleware (put this last)  
     app.use(errorHandler);  
@@ -57,5 +64,3 @@ connectDB()
     console.error('Failed to connect to the database:', error);  
     process.exit(1);
   });
-
-
