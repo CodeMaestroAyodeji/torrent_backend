@@ -6,12 +6,14 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true },
   password: { type: String, required: true },
   verified: { type: Boolean, default: false },
+  isAdmin: { type: Boolean, default: false }, // Add isAdmin flag
   subscription: {
     type: String,
     enum: ['free', 'premium'],
     default: 'free',
   },
   subscriptionExpiry: { type: Date, default: null },
+  isBlocked: { type: Boolean, default: false },
 }, { timestamps: true });
 
 // Hash password before saving the user

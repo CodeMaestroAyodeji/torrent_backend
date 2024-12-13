@@ -11,6 +11,46 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1d' });  
 };  
 
+// Register Admin  
+exports.createAdmin = async (req, res) => {
+  const { name, email, password } = req.body;
+
+  try {
+    // Check if the user is already registered
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Create a new admin user
+    const admin = new User({
+      name,
+      email,
+      password,
+      isAdmin: true,
+      verified: true, // Admins are automatically verified
+    });
+
+    await admin.save();
+
+    // Send a response back with admin details (excluding sensitive fields)
+    res.status(201).json({
+      message: 'Admin created successfully.',
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        isAdmin: admin.isAdmin,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating admin:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
 // Register User  
 exports.register = async (req, res) => {  
   const { name, email, password } = req.body;  
