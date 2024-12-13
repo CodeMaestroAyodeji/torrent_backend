@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const torrentSchema = new mongoose.Schema({  
   user: {  
     type: mongoose.Schema.Types.ObjectId,  
-    ref: 'User', // Reference to the User model  
+    ref: 'User',  
     required: true,  
   },  
   magnetLink: {  
@@ -22,7 +22,7 @@ const torrentSchema = new mongoose.Schema({
   },  
   fileName: {  
     type: String,  
-    required: true, // Assuming we want to store the name of the downloaded file  
+    required: true,
   },  
 }, { timestamps: true });  
 

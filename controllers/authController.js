@@ -1,10 +1,14 @@
 // controllers/authController.js
 
 const User = require('../models/User');  
-const jwt = require('jsonwebtoken');  
+const jwt = require('jsonwebtoken'); 
+const crypto = require('crypto');
 const { sendEmail } = require('../utils/email');  
 const { registrationEmail } = require('../utils/templates/registrationEmail');
 const { successVerification } = require('../utils/templates/successVerification');
+const { passwordResetEmail } = require('../utils/templates/passwordResetEmail');
+const { successPasswordReset } = require('../utils/templates/successPasswordReset');
+
 
 // Generate JWT Token  
 const generateToken = (id) => {  
@@ -127,4 +131,61 @@ exports.verifyEmail = async (req, res) => {
     }  
     res.status(500).json({ error: error.message });  
   }  
+};
+
+// Forgot Password  
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'No user found with this email.' });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.resetPasswordExpiry = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    // Define the reset link
+    const resetLink = `${process.env.FRONTEND_DEV_URL}/reset-password?token=${resetToken}`;
+
+    // Pass the reset link to the email content function
+    const emailContent = passwordResetEmail(user.name, resetLink);  
+    await sendEmail(user.email, 'Password Reset Request', emailContent);
+
+    res.json({ message: 'Password reset email sent successfully.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+exports.resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  try {
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpiry: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired token.' });
+    }
+
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiry = undefined;
+    await user.save();
+
+    const emailContent = successPasswordReset(user.name);  
+    await sendEmail(user.email, 'Password Reset Success', emailContent);
+
+    res.json({ message: 'Password reset successful.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };

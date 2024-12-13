@@ -11,6 +11,7 @@ const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth'); 
 const torrentRoutes = require('./routes/torrent');
 const adminRoutes = require('./routes/admin');
+const userProfileRoutes = require('./routes/userProfile');
 const subscriptionRoutes = require('./routes/subscription');
 const paypalRoutes = require('./routes/paypal');
 const paystackRoutes = require('./routes/paystack');
@@ -51,6 +52,7 @@ connectDB()
     app.use('/api/paypal', paypalRoutes);
     app.use('/api/paystack', paystackRoutes);
     app.use('/api/flutterwave', flutterwaveRoutes);
+    app.use('/api/users/', userProfileRoutes);
     
 
     // Error handling middleware (put this last)  
