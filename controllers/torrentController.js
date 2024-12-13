@@ -4,6 +4,8 @@ const Torrent = require('../models/Torrent');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
+const User = require('../models/User');
+const { uploadFileToB2 } = require('../utils/backblaze');
 const upload = require('../middleware/uploadTorrent');  
 const { sendEmail } = require('../utils/email');
 const { downloadCompleteEmail } = require('../utils/templates/downloadCompleteEmail');
@@ -35,62 +37,83 @@ const simulateDownload = async (torrentId) => {
 };
 
 
-// Add Torrent via Magnet Link  
-exports.addMagnetLink = async (req, res) => {  
-  const { magnetLink } = req.body;  
+exports.addMagnetLink = async (req, res) => {
+  const { magnetLink } = req.body;
 
-  try {  
-    const fileName = getFileNameFromMagnetLink(magnetLink);
+  try {
+    const user = await User.findById(req.user.id);
 
-    const torrent = new Torrent({  
-      user: req.user.id, 
-      magnetLink,  
-      fileName, 
-    });  
+    // Check storage usage (assign arbitrary size for magnet links if needed)
+    const estimatedSize = 10 * 1024 * 1024; // Assume each magnet link represents 10 MB
+    const planLimit = user.subscription === 'premium' ? 50 * 1024 * 1024 * 1024 : 10 * 1024 * 1024 * 1024;
 
-    await torrent.save();  
-    simulateDownload(torrent._id); 
+    if (user.storageUsed + estimatedSize > planLimit) {
+      return res.status(400).json({ error: 'Storage limit exceeded' });
+    }
 
-    // Send an email notification after successfully storing the torrent  
-    await sendEmail(req.user.email, 'Download Complete', downloadCompleteEmail(req.user.name, fileName));  
+    const torrent = new Torrent({
+      user: req.user.id,
+      magnetLink,
+      fileName: 'Magnet Link',
+    });
 
-    res.status(201).json({ message: 'Torrent added successfully.', torrent });  
-  } catch (error) {  
-    res.status(500).json({ error: error.message });  
-  }  
+    await torrent.save();
+
+    // Update user storage usage
+    user.storageUsed += estimatedSize;
+    await user.save();
+
+    res.status(201).json({ message: 'Magnet link added successfully.', torrent });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 
-// Upload .torrent file  
-exports.uploadTorrentFile = [  
-  upload.single('torrentFile'), 
-  async (req, res) => {  
-    if (!req.file) {  
-      return res.status(400).json({ message: 'No file uploaded.' });  
-    }  
 
-    const { filename, path: filePath } = req.file;  
+// Upload torrent file handler
+exports.uploadTorrentFile = [
+  upload.single('torrentFile'), // Middleware to handle file upload
+  async (req, res) => {
+      if (!req.file) {
+          return res.status(400).json({ message: 'No file uploaded.' });
+      }
 
-    try {  
-      const torrent = new Torrent({  
-        user: req.user.id,  
-        magnetLink: `file://${filePath}`,  
-        status: 'queued',  
-        fileName: filename,  
-      });  
+      const { filename, path: filePath } = req.file;
 
-      await torrent.save();  
-      simulateDownload(torrent._id);  
+      try {
+          // Upload the file to Backblaze B2
+          const b2Response = await uploadFileToB2(filePath, filename);
 
-      await sendEmail(req.user.email, 'Torrent File Uploaded',   
-        downloadCompleteEmail(req.user.name, filename));  
+          // Construct the public URL using the file name
+          const magnetLink = `https://f${process.env.B2_BUCKET_ID}.backblazeb2.com/file/${process.env.B2_BUCKET_NAME}/${b2Response.fileName}`;
 
-      res.status(201).json({ message: 'Torrent file uploaded successfully.', torrent });  
-    } catch (error) {  
-      res.status(500).json({ error: error.message });  
-    }  
-  },  
-]; 
+          // Save the torrent details
+          const torrent = new Torrent({
+              user: req.user.id,
+              magnetLink, // Use the generated public URL
+              fileName: filename,
+              status: 'queued',
+          });
+
+          await torrent.save();
+
+          simulateDownload(torrent._id);
+
+          await sendEmail(
+              req.user.email,
+              'Torrent File Uploaded',
+              downloadCompleteEmail(req.user.name, filename)
+          );
+
+          res.status(201).json({ message: 'Torrent file uploaded successfully.', torrent });
+      } catch (error) {
+          console.error('Error uploading file or saving torrent:', error);
+          res.status(500).json({ error: 'Failed to upload file to Backblaze B2.' });
+      }
+  },
+];
+
 
 // Search Torrents via External API  
 exports.searchTorrents = async (req, res) => {  

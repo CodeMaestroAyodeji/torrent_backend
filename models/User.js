@@ -12,6 +12,7 @@ const UserSchema = new mongoose.Schema({
     enum: ['free', 'premium'],
     default: 'free',
   },
+  storageUsed: { type: Number, default: 0 }, 
   subscriptionExpiry: { type: Date, default: null },
   isBlocked: { type: Boolean, default: false },
   resetPasswordToken: { type: String, default: null },
