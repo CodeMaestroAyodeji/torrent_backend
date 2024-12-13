@@ -1,5 +1,3 @@
-// models/User.js
-
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
@@ -8,7 +6,12 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true },
   password: { type: String, required: true },
   verified: { type: Boolean, default: false },
-  subscription: { type: String, enum: ['free', 'premium'], default: 'free' },
+  subscription: {
+    type: String,
+    enum: ['free', 'premium'],
+    default: 'free',
+  },
+  subscriptionExpiry: { type: Date, default: null },
 }, { timestamps: true });
 
 // Hash password before saving the user
