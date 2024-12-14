@@ -9,6 +9,8 @@ const { uploadFileToB2 } = require('../utils/backblaze');
 const upload = require('../middleware/uploadTorrent');  
 const { sendEmail } = require('../utils/email');
 const { downloadCompleteEmail } = require('../utils/templates/downloadCompleteEmail');
+const { broadcastTorrentProgress } = require('../websocket/websocketServer');
+
 
 // Helper function to extract the file name from a magnet link  
 const getFileNameFromMagnetLink = (magnetLink) => {  
@@ -28,6 +30,9 @@ const simulateDownload = async (torrentId) => {
       torrent.progress = progress;
       torrent.status = progress < 100 ? 'downloading' : 'completed';
       await torrent.save();
+
+      // Notify the user via WebSocket
+      broadcastTorrentProgress(torrent.user.toString(), torrentId);
 
       if (progress >= 100) {
         clearInterval(interval);
