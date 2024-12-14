@@ -12,6 +12,7 @@
   "dependencies": {
     "@hapi/joi": "^17.1.1",
     "@paypal/checkout-server-sdk": "^1.0.3",
+    "archiver": "^7.0.1",
     "axios": "^1.7.9",
     "b2-sdk": "^1.7.0",
     "backblaze-b2": "^1.7.0",

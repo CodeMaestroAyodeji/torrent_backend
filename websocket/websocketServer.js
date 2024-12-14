@@ -1,3 +1,5 @@
+// websocket/websocketServer.js
+
 const WebSocket = require('ws');
 const url = require('url');
 const Torrent = require('../models/Torrent');
@@ -69,6 +71,21 @@ const broadcastTorrentProgress = async (userId, torrentId) => {
       console.log(`No torrent found with id: ${torrentId}`);
     }
   };
-  
 
-module.exports = { initializeWebSocket, broadcastTorrentProgress };
+
+  // Broadcast additional torrent events
+const broadcastTorrentEvent = async (userId, torrentId, event) => {
+  const ws = clients.get(userId);
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+  const payload = { torrentId, event };
+  console.log(`Broadcasting event '${event}' to userId: ${userId}`, payload);
+
+  ws.send(JSON.stringify(payload));
+};
+
+module.exports = {
+  initializeWebSocket,
+  broadcastTorrentProgress,
+  broadcastTorrentEvent,
+};
